@@ -2,6 +2,39 @@ import pandas as pd
 import os
 from datetime import datetime
 
+# Ścieżki do plików, w których będą przechowywane ostatnie ID
+last_ids = {
+    'make': 'last_make_id.txt',
+    'model': 'last_model_id.txt',
+    'year': 'last_year_id.txt',
+    'product': 'last_product_id.txt'
+}
+
+def append_to_csv(df, output_directory, filename):
+    """Dodaje nowe dane do istniejącego pliku CSV lub tworzy nowy, jeśli plik nie istnieje."""
+    file_path = os.path.join(output_directory, filename)
+    if os.path.exists(file_path):
+        existing_df = pd.read_csv(file_path)
+        updated_df = pd.concat([existing_df, df], ignore_index=True)
+        updated_df.to_csv(file_path, index=False)
+    else:
+        df.to_csv(file_path, index=False)
+
+def get_next_id(entity):
+    """
+    Funkcja zwraca następne ID dla danej encji i inkrementuje licznik.
+    """
+    last_id_file = last_ids[entity]
+    if os.path.exists(last_id_file):
+        with open(last_id_file, 'r') as file:
+            last_id = int(file.read().strip())
+    else:
+        last_id = 0
+    next_id = last_id + 1
+    with open(last_id_file, 'w') as file:
+        file.write(str(next_id))
+    return next_id
+
 def generate_csv_files(source_df, output_directory):
     # Unikalne wartości dla 'Make', 'Model', 'Year'
     unique_makes = source_df['Make'].unique()
@@ -101,17 +134,29 @@ def generate_csv_files(source_df, output_directory):
         'id_leopartsfilter_level5': 0
     })
 
-        # Zapis danych do plików CSV
-    make_df.to_csv(os.path.join(output_directory, 'ps_leopartsfilter_make.csv'), index=False)
-    make_lang_df.to_csv(os.path.join(output_directory, 'ps_leopartsfilter_make_lang.csv'), index=False)
-    make_shop_df.to_csv(os.path.join(output_directory, 'ps_leopartsfilter_make_shop.csv'), index=False)
-    model_df.to_csv(os.path.join(output_directory, 'ps_leopartsfilter_model.csv'), index=False)
-    model_lang_df.to_csv(os.path.join(output_directory, 'ps_leopartsfilter_model_lang.csv'), index=False)
-    model_shop_df.to_csv(os.path.join(output_directory, 'ps_leopartsfilter_model_shop.csv'), index=False)
-    year_df.to_csv(os.path.join(output_directory, 'ps_leopartsfilter_year.csv'), index=False)
-    year_lang_df.to_csv(os.path.join(output_directory, 'ps_leopartsfilter_year_lang.csv'), index=False)
-    year_shop_df.to_csv(os.path.join(output_directory, 'ps_leopartsfilter_year_shop.csv'), index=False)
-    product_df.to_csv(os.path.join(output_directory, 'ps_leopartsfilter_product.csv'), index=False)
+    # Pobieranie następnego ID dla każdej encji
+    next_make_id = get_next_id('make')
+    next_model_id = get_next_id('model')
+    next_year_id = get_next_id('year')
+    next_product_id = get_next_id('product')
+
+    # Kontynuowanie numeracji ID dla każdej z tabel
+    make_df['id_leopartsfilter_make'] += next_make_id
+    model_df['id_leopartsfilter_model'] += next_model_id
+    year_df['id_leopartsfilter_year'] += next_year_id
+    product_df['id_product'] += next_product_id
+
+    # Zapisywanie DataFrame'ów do plików CSV z użyciem append_to_csv
+    append_to_csv(make_df, output_directory, 'ps_leopartsfilter_make.csv')
+    append_to_csv(make_lang_df, output_directory, 'ps_leopartsfilter_make_lang.csv')
+    append_to_csv(make_shop_df, output_directory, 'ps_leopartsfilter_make_shop.csv')
+    append_to_csv(model_df, output_directory, 'ps_leopartsfilter_model.csv')
+    append_to_csv(model_lang_df, output_directory, 'ps_leopartsfilter_model_lang.csv')
+    append_to_csv(model_shop_df, output_directory, 'ps_leopartsfilter_model_shop.csv')
+    append_to_csv(year_df, output_directory, 'ps_leopartsfilter_year.csv')
+    append_to_csv(year_lang_df, output_directory, 'ps_leopartsfilter_year_lang.csv')
+    append_to_csv(year_shop_df, output_directory, 'ps_leopartsfilter_year_shop.csv')
+    append_to_csv(product_df, output_directory, 'ps_leopartsfilter_product.csv')
 
 def scan_directories_and_generate_csv(input_directories, output_directory):
     for input_directory in input_directories:
@@ -122,10 +167,10 @@ def scan_directories_and_generate_csv(input_directories, output_directory):
                 generate_csv_files(source_df, output_directory)
 
 # Lista ścieżek do folderów źródłowych
-input_directories = ['/home']  
+input_directories = ['x']  
 
 # Ścieżka do folderu wynikowego
-output_directory = '/home'
+output_directory = 'x'
 
 # Wywołanie funkcji skanującej foldery
 scan_directories_and_generate_csv(input_directories, output_directory)
